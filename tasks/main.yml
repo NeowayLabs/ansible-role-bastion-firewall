@@ -1,2 +1,9 @@
 ---
-# tasks file for bastion-firewall
+- name: Ensure packages dependencies
+  become: yes
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - iptables
+    - iptables-persistent
