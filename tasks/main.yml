@@ -35,3 +35,10 @@
   command: netfilter-persistent save
   register: save_result
   changed_when: 'save_result.rc != 0'
+
+- name: Start and enable iptables netfilter persistent
+  become: yes
+  service:
+    name: netfilter-persistent
+    enabled: yes
+    state: started
