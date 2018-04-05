@@ -1,0 +1,73 @@
+#jinja2: trim_blocks:True, lstrip_blocks: True
+#==============================================================================
+*filter
+#==============================================================================
+
+###########
+# polices #
+# #########
+:INPUT DROP [0:0]
+:OUTPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+
+###################
+# default section #
+###################
+--append INPUT  --in-interface lo                         --jump ACCEPT --match comment --comment "default"
+--append INPUT  --protocol icmp                           --jump ACCEPT --match comment --comment "default"
+--append INPUT  --match state --state RELATED,ESTABLISHED --jump ACCEPT --match comment --comment "default"
+--append OUTPUT --out-interface lo                        --jump ACCEPT --match comment --comment "default"
+--append OUTPUT --protocol icmp                           --jump ACCEPT --match comment --comment "default"
+--append OUTPUT --match state --state RELATED,ESTABLISHED --jump ACCEPT --match comment --comment "default"
+
+###################
+# general section #
+###################
+# disable and log ssh
+--append INPUT  --protocol tcp --dport 22 --jump LOG    --match comment --comment "general" --match limit --limit 1/s --log-prefix "ssh drop " --log-level 7
+--append INPUT  --protocol tcp --dport 22 --jump REJECT --match comment --comment "general"
+# enable dns output
+--append OUTPUT --protocol udp --dport 53 --jump ACCEPT --match comment --comment "general" --destination "{{ bastion_firewall_dns_servers | map(attribute='addr') | list | join(',') }}"
+# enable http
+--append OUTPUT --protocol tcp --dport 80 --jump ACCEPT --match comment --comment "general"
+
+#################
+# group section #
+#################
+# create a rule for each destination in networks group object
+{% for group in bastion_firewall_groups if "networks" in group                   %}
+--new-chain "{{ group.name | upper }}" --match comment --comment "{{ group.name }}"
+{%     for network in group.networks                                             %}
+--append "{{ group.name | upper }}" --destination "{{ network.cidr }}" --protocol tcp --match multiport --dports "{{ network.ports | join(',') }}" --jump ACCEPT --match comment --comment "{{ group.name }}"
+{%     endfor                                                                    %}
+{% endfor                                                                        %}
+
+################
+# user section #
+################
+# create link beatween user and ip addresses
+{% for account in bastion_firewall_accounts if "networks" in account             %}
+{%     for group in account.groups                                               %}
+--append OUTPUT --match owner --uid-owner "{{ account.name }}" --jump "{{ group | upper }}" --match comment --comment "{{ account.name }}"
+{%     endfor                                                                    %}
+{%     for network in account.networks                                           %}
+--insert INPUT --source "{{ network.cidr }}" --protocol tcp --dport 22 --jump ACCEPT --match comment --comment "{{ account.name }}"
+{%     endfor                                                                    %}
+{% endfor                                                                        %}
+
+COMMIT
+
+#==============================================================================
+*nat
+#==============================================================================
+
+###############
+# nat section #
+###############
+{% for group in bastion_firewall_groups if "networks" in group                    %}
+{%     for network in group.networks if "nat" in network and network.nat == true  %}
+--append POSTROUTING --source "{{ network.cidr }}" --out-interface eth0 --jump SNAT --to-source "{{ hostvars[inventory_hostname].ansible_host }}"
+{%     endfor                                                                     %}
+{% endfor                                                                         %}
+
+COMMIT
