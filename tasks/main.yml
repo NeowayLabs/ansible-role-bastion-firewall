@@ -24,3 +24,8 @@
     dest: /etc/iptables/rules.bastion.v4
     mode: 0400
     owner: root
+
+- name: Apply ipv4 rules
+  become: yes
+  changed_when: false
+  shell: iptables-restore < /etc/iptables/rules.bastion.v4
