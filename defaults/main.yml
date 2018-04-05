@@ -1,2 +1,21 @@
 ---
 bastion_firewall_ipv4_forwarding: 1
+
+bastion_firewall_dns_servers:
+    - { provider: azure, addr: 168.63.129.16 }
+    - { provider: google, addr: 8.8.8.8 }
+    - { provider: google, addr: 8.8.4.4 }
+    - { provider: opendns, addr: 208.67.222.222 }
+    - { provider: opendns, addr:  208.67.220.220 }
+
+bastion_firewall_groups:
+  - name: sysadmin
+    networks:
+      - cidr: 10.69.69.0/16
+        ports: [22]
+        nat: true
+
+bastion_firewall_accounts:
+  - name: sysadmin
+    networks:
+      - cidr: 192.168.69.69/32
