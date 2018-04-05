@@ -7,3 +7,12 @@
   with_items:
     - iptables
     - iptables-persistent
+
+- name: Setup ipv4 forwarding
+  become: yes
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '{{ bastion_firewall_ipv4_forwarding }}'
+    reload: yes
+    state: present
+    sysctl_file: /etc/sysctl.d/90-ipv4-forwarding.conf

@@ -1,2 +1,2 @@
 ---
-# defaults file for bastion-firewall
+bastion_firewall_ipv4_forwarding: 1
