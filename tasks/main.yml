@@ -29,3 +29,9 @@
   become: yes
   changed_when: false
   shell: iptables-restore < /etc/iptables/rules.bastion.v4
+
+- name: Save iptables rules
+  become: yes
+  command: netfilter-persistent save
+  register: save_result
+  changed_when: 'save_result.rc != 0'
