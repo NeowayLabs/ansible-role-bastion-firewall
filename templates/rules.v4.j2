@@ -66,7 +66,7 @@ COMMIT
 ###############
 {% for group in bastion_firewall_groups if "networks" in group                    %}
 {%     for network in group.networks if "nat" in network and network.nat == true  %}
---append POSTROUTING --source "{{ network.cidr }}" --out-interface eth0 --jump SNAT --to-source "{{ hostvars[inventory_hostname].ansible_host }}"
+--append POSTROUTING --source "{{ network.cidr }}" --out-interface eth0 --jump SNAT --to-source "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
 {%     endfor                                                                     %}
 {% endfor                                                                         %}
 
